@@ -1,0 +1,97 @@
+文|Seraph
+### 01 | 问题
+给定一个整数数组 nums 和一个目标值 target，请你在该数组中找出和为目标值的那两个整数，并返回他们的数组下标。
+你可以假设每种输入只会对应一个答案。但是，你不能重复利用这个数组中同样的元素。
+示例:
+>给定 nums = [2, 7, 11, 15], target = 9
+>因为 nums[0] + nums[1] = 2 + 7 = 9
+>所以返回 [0, 1]
+
+### 02 | 解题
+
+#### 初解（双循环检索）：
+一开始我们想到的一般就是双重循环搜索，最终找到两数之和等于目标值的两个数下标，如下
+```cpp
+class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        vector<int> vecResult;
+        int iSize = nums.size();
+        if(0==iSize)
+            return vecResult;
+        for(int i=0; i<nums.size()-1; i++)
+        {
+            for(int j=i+1; j<nums.size(); j++)
+            {
+                if(nums[i]+nums[j]==target)
+                {
+                    vecResult.push_back(i);
+                    vecResult.push_back(j);
+                    return vecResult;
+                }
+            }
+        } 
+        return vecResult;
+    }
+};
+```
+可是这种时间效率会很低，时间复杂度为$O(n^2)$，显然不是我们想要的。
+这个时候，我们发现是双循环查找耗费了过多的时间，既然是查找，应该想到哈希表用空间来换取时间。
+#### 再解（两遍哈希表）：
+第一遍将各个`值-序号`存入哈希表中，第二遍从哈希表中找出是否有值等于`target-当前值`。
+```cpp
+class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        vector<int> result;
+        map<int,int> value2index;
+        for(int i=0; i<nums.size(); i++)
+        {
+            value2index[nums[i]]=i;
+        }
+        for(int i=0; i<nums.size(); i++)
+        {
+            int iFinded = target - nums[i];
+            if(value2index.find(iFinded)!=value2index.end() && value2index[iFinded]!=i)//需要注意value2index[iFinded]!=i的作用
+            {
+                result.push_back(i);
+                result.push_back(value2index[iFinded]);
+                break;
+            }
+        }
+        return result;
+    }
+};
+```
+以上需要注意的是判断语句中`value2index[iFinded]!=i`的作用有两个：
+* 例如[3, 4, 2]要找到和为6的数，我们不能找3+3=6，因为每个数只能用一回。
+* 例如[3,3]要找到和为6的数，因为map的key是唯一的，所以[3]=1，而[3]=0被覆盖了。我们必须从前检索到后面，否则按如上判断条件语句可能找不到相同数字的情况。
+
+#### 终解（一遍哈希表）：
+我们可以一边存哈希表，一边查找当前哈希表是否中是否有和当前值相加等于target的的情况。这样不仅一遍哈希表就能完成，而且区分开了当前值和其它值，就不需要如上另外加判断语句来排除相同数和数本身的情况。
+```cpp
+class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        vector<int> result;
+        unordered_map<int, int> value2index;//这里将map换成unordered_map了
+        for(int i=0; i<nums.size(); i++)
+        {
+            int iFinded = target - nums[i];
+            if(value2index.find(iFinded)!=value2index.end())
+            {
+                result.push_back(value2index[iFinded]);
+                result.push_back(i);
+                break;
+            }
+            value2index[nums[i]]=i;
+        }
+        return result;
+    }
+};
+```
+注意上述答案将`map`换成`unordered_map`了，由于`map`利用树结构按key大小进行排序，所以附带了一些耗时，而我们这里不需要排序关系，所以使用`unordered_map`会快一些。
+
+### 03 | 积累知识点
+1. `map`的键值唯一。
+2. `unordered_map`比`map`快一些。
